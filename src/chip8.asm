@@ -782,14 +782,14 @@ exit:
 
 rom_err:
     mov ah, 0x9
-    mov dx, rom_err_msg
+    mov dx, usage_msg
     int 0x21
 
     mov ax, 0x4C01
     int 0x21
 
 dta: resb 0x2B
-rom_err_msg: db "An error occured while loading the specified rom!", 0xA, 0xD, '$'
+usage_msg: db "Usage: chip8.com [ROM_FILE]", 0xA, 0xD, '$'
 
 delay_timer:
     dw 0
