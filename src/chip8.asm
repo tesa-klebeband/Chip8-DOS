@@ -1,7 +1,7 @@
 [BITS 16]
 [ORG 0x100]
 
-%define COLOR 0xA
+%define COLOR 0x9
 mov bl, [0x80]
 xor bh, bh
 add bl, 0x81
@@ -196,11 +196,7 @@ _call:
     ret
      
 skipe:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
+    call load_dl
     
     mov bx, ax
     cmp dl, bl
@@ -211,11 +207,7 @@ skipe:
     ret
 
 skipue:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
+    call load_dl
     
     mov bx, ax
     cmp dl, bl
@@ -226,17 +218,8 @@ skipue:
     ret
 
 _skipe:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dh, [bx]
+    call load_dl
+    call load_dh
 
     cmp dl, dh
     jne .done
@@ -246,184 +229,102 @@ _skipe:
     ret
 
 setx:
-    mov bx, ax
     mov dx, ax
 
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
+    call upper_reg_to_bx
     mov [bx], dl
     ret
 
 addx:
-    mov bx, ax
     mov dx, ax
 
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
+    call upper_reg_to_bx
     add [bx], dl
     ret
 
 _setx:
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
+    call load_dh
 
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov [bx], dl
-    ret
-
-orx:
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    or [bx], dl
-    ret
-
-andx:
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    and [bx], dl
-    ret
-
-xorx:
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    xor [bx], dl
-    ret
-
-_addx:
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    add [bx], dl
-    ret
-
-subx:
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    sub [bx], dl
-    ret
-
-shrx:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dh, [bx]
-    and dh, 1
-    shr byte [bx], 1
-
-    mov bx, ax
-    mov bx, 0xF
-    add bx, registers
+    call upper_reg_to_bx
     mov [bx], dh
     ret
 
-_subx:
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-    xor dh, dh
+orx:
+    call load_dh
 
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov cl, [bx]
+    call upper_reg_to_bx
+    or [bx], dh
+    ret
+
+andx:
+    call load_dh
+
+    call upper_reg_to_bx
+    and [bx], dh
+    ret
+
+xorx:
+    call load_dh
+
+    call upper_reg_to_bx
+    xor [bx], dh
+    ret
+
+_addx:
+    call load_dh
+
+    call upper_reg_to_bx
+    add [bx], dh
+    ret
+
+subx:
+    call load_dh
+
+    call upper_reg_to_bx
+    sub [bx], dh
+    ret
+
+shrx:
+    call load_dl
+    and dl, 1
+    shr byte [bx], 1
+
+    mov [registers + 0xF], dl
+    ret
+
+_subx:
+    call load_dh
+
+    call load_dl
+    mov cl, dl
+    shr dx, 8
     xor ch, ch
     sub dx, cx
     mov [bx], dl
 
-    mov bx, ax
-    mov bx, 0xF
-    add bx, registers
-
     cmp dh, 0
     jne .no_borrow
 
-    mov [bx], byte 0
+    mov [registers + 0xF], byte 0
     jmp .done
 
 .no_borrow:
-    mov [bx], byte 1
+    mov [registers + 0xF], byte 1
 
 .done:
     ret
 
 shlx:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dh, [bx]
-    shr dh, 7
+    call load_dl
+    shr dl, 7
     shl byte [bx], 1
 
-    mov bx, ax
-    mov bx, 0xF
-    add bx, registers
-    mov [bx], dh
+    mov [registers + 0xF], dl
     ret
 
 _skipue:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
-
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dh, [bx]
+    call load_dl
+    call load_dh
 
     cmp dl, dh
     je .done
@@ -444,8 +345,8 @@ jmpi:
     xor dh, dh
     mov dl, [registers]
     add bx, dx
+    sub bx, 2
     mov [program_counter], bx
-    sub [program_counter], word 2
     ret
 
 rand:
@@ -454,17 +355,9 @@ rand:
 draw:
     mov [registers + 0xF], byte 0
 
-    mov bx, ax
-    shr bx, 4
-    and bx, 0xF
-    add bx, registers
-    mov dh, [bx]
+    call load_dh
 
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
+    call load_dl
 
     mov cx, ax
     and cx, 0xF
@@ -531,15 +424,10 @@ draw:
     ret
 
 skipkey:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
+    call load_dl
     xor bh, bh
     mov bl, dl
-    add bx, keycodes
-    mov dl, [bx]
+    mov dl, [bx + keycodes]
 
     in al, 0x60
 
@@ -552,15 +440,10 @@ skipkey:
     ret
 
 skipnkey:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
-    mov dl, [bx]
+    call load_dl
     xor bh, bh
     mov bl, dl
-    add bx, keycodes
-    mov dl, [bx]
+    mov dl, [bx + keycodes]
 
     in al, 0x60
 
@@ -576,20 +459,14 @@ skipnkey:
     ret
 
 getdelay:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
+    call load_dl
     mov dx, [delay_timer]
     shr dx, 3
     mov [bx], dl
     ret
 
 getkey:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
+    call load_dl
 
 .wait_key:
     in al, 0x60
@@ -606,12 +483,8 @@ getkey:
     ret
     
 setdelay:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
+    call load_dl
     xor dh, dh
-    mov dl, [bx]
     shl dx, 3
 
     mov [delay_timer], dx
@@ -621,19 +494,14 @@ setsound:
     ret
 
 addi:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    mov al, [bx + registers]
-    xor ah, ah
-    add [i_reg], ax
+    call load_dl
+    xor dh, dh
+    add [i_reg], dx
     ret
 
 setsprite:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    mov al, [bx + registers]
+    call load_dl
+    mov al, dl
     xor ah, ah
     mov cx, 5
     mul cx
@@ -642,10 +510,8 @@ setsprite:
     ret
 
 stobcd:
-    mov bx, ax
-    shr bx, 8
-    and bx, 0xF
-    add bx, registers
+    call load_dl
+    mov al, dl
     xor ah, ah
     mov al, [bx]
     mov bx, [i_reg]
@@ -772,6 +638,29 @@ get_pixel:
     pop bx
     pop es
 
+    ret
+
+load_dl:
+    mov bx, ax
+    shr bx, 8
+    and bx, 0xF
+    add bx, registers
+    mov dl, [bx]
+    ret
+
+load_dh:
+    mov bx, ax
+    shr bx, 4
+    and bx, 0xF
+    add bx, registers
+    mov dh, [bx]
+    ret
+
+upper_reg_to_bx:
+    mov bx, ax
+    shr bx, 8
+    and bx, 0xF
+    add bx, registers
     ret
 
 exit:
